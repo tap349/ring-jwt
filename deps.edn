@@ -1,0 +1,11 @@
+{:paths ["src"]
+ :deps {cheshire/cheshire           {:mvn/version "5.10.2"}
+        commons-codec/commons-codec {:mvn/version "1.15"}
+        org.clojure/clojure         {:mvn/version "1.11.0"}
+        com.auth0/java-jwt          {:mvn/version "3.19.0"}
+        com.auth0/jwks-rsa          {:mvn/version "0.21.0"}}
+ 
+ :aliases {:dev {:extra-paths ["test"]
+                 :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                              kelveden/clj-wiremock  {:mvn/version "1.8.0"}
+                              org.slf4j/slf4j-simple {:mvn/version "1.7.36"}}}}}
