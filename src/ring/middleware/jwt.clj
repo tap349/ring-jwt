@@ -39,25 +39,45 @@
   (when-not (s/valid? ::opts opts)
     (throw (ex-info "Invalid options." (s/explain-data ::opts opts))))
 
-  (fn [req]
-    (try
-      (if-let [token ((or find-token-fn (read-token-from-header "Authorization")) req)]
-        (if-let [alg-opts (get issuers (or (token/decode-issuer token) :no-issuer))]
-          (->> (token/decode token alg-opts)
-               (assoc req :claims)
-               (handler))
-          {:status 401
-           :body   "Unknown issuer."})
+  (fn
+    ([req respond raise]
+     (try
+       (if-let [token ((or find-token-fn (read-token-from-header "Authorization")) req)]
+         (if-let [alg-opts (get issuers (or (token/decode-issuer token) :no-issuer))]
+           (->> (token/decode token alg-opts)
+                (assoc req :claims)
+                #(handler % respond raise))
+           {:status 401
+            :body   "Unknown issuer."})
 
-        (if reject-missing-token?
-          {:status 401
-           :body   "No token found."}
-          (->> (assoc req :claims {})
-               (handler))))
+         (if reject-missing-token?
+           {:status 401
+            :body   "No token found."}
+           (->> (assoc req :claims {})
+                #(handler % respond raise))))
 
-      (catch JWTVerificationException e
-        {:status 401
-         :body   (ex-message e)}))))
+       (catch JWTVerificationException e
+         {:status 401
+          :body   (ex-message e)})))
+    ([req]
+     (try
+       (if-let [token ((or find-token-fn (read-token-from-header "Authorization")) req)]
+         (if-let [alg-opts (get issuers (or (token/decode-issuer token) :no-issuer))]
+           (->> (token/decode token alg-opts)
+                (assoc req :claims)
+                (handler))
+           {:status 401
+            :body   "Unknown issuer."})
+
+         (if reject-missing-token?
+           {:status 401
+            :body   "No token found."}
+           (->> (assoc req :claims {})
+                (handler))))
+
+       (catch JWTVerificationException e
+         {:status 401
+          :body   (ex-message e)})))))
 
 (s/fdef wrap-jwt
         :ret fn?
