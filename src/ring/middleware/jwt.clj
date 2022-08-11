@@ -46,19 +46,21 @@
          (if-let [alg-opts (get issuers (or (token/decode-issuer token) :no-issuer))]
            (->> (token/decode token alg-opts)
                 (assoc req :claims)
-                #(handler % respond raise))
-           {:status 401
-            :body   "Unknown issuer."})
+                (#(handler % respond raise)))
+           (respond
+            {:status 401
+             :body   "Unknown issuer."}))
 
          (if reject-missing-token?
-           {:status 401
-            :body   "No token found."}
+           (respond {:status 401
+                     :body   "No token found."})
            (->> (assoc req :claims {})
-                #(handler % respond raise))))
+                (#(handler % respond raise)))))
 
        (catch JWTVerificationException e
-         {:status 401
-          :body   (ex-message e)})))
+         (respond
+          {:status 401
+           :body   (ex-message e)}))))
     ([req]
      (try
        (if-let [token ((or find-token-fn (read-token-from-header "Authorization")) req)]
