@@ -8,7 +8,8 @@
   [header-name]
   (fn [{:keys [headers]}]
     (some->> headers
-             (filter #(.equalsIgnoreCase header-name (key %)))
+             ;; https://github.com/oracle/graal/issues/767#issuecomment-433983245
+             (filter #(.equalsIgnoreCase ^java.lang.String header-name (key %)))
              (first)
              (val)
              (re-find #"(?i)^Bearer (.+)$")

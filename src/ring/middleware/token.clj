@@ -8,7 +8,8 @@
            (com.auth0.jwt.exceptions JWTDecodeException)
            (org.apache.commons.codec Charsets)
            (org.apache.commons.codec.binary Base64)
-           (java.security PublicKey)))
+           (java.security PublicKey)
+           (com.auth0.jwt.interfaces RSAKeyProvider)))
 
 (defn keywordize-non-namespaced-claims
   "Walks through the claims keywordizing them unless the key is namespaced. This is detected
@@ -37,7 +38,7 @@
       (JWT/require)
       (.acceptLeeway (or leeway-seconds 0))
       (.build)
-      (.verify token)
+      (^com.auth0.jwt.interfaces.DecodedJWT .verify ^java.lang.String token)
       (.getPayload)
       (base64->map)))
 
@@ -81,10 +82,11 @@
   {:pre [(s/valid? ::public-key-opts opts)]}
 
   (let [[public-key-type _] (s/conform ::public-key-opts opts)]
-    (-> (Algorithm/RSA256 (case public-key-type
-                            :url (jwk/rsa-key-provider jwk-endpoint)
-                            :key public-key))
-        (decode-token* token opts))))
+    (case public-key-type
+      :url (-> (Algorithm/RSA256 ^RSAKeyProvider (jwk/rsa-key-provider jwk-endpoint))
+               (decode-token* token opts))
+      :key (-> (Algorithm/RSA256 ^PublicKey public-key)
+               (decode-token* token opts)))))
 
 (defmethod decode :HS256
   [token {:keys [secret] :as opts}]
